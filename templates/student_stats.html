@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика ученика</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background: #eef2f6; padding: 30px 20px; color: #1e2a3a; }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .header h1 { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #1b2a4a, #3a5a7a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header h1 i { -webkit-text-fill-color: initial; color: #4f8ea7; margin-right: 10px; }
+
+        .back-btn { background: #eef2f6; padding: 8px 20px; border-radius: 40px; text-decoration: none; color: #2d3748; font-weight: 600; }
+        .back-btn:hover { background: #dce2ea; }
+
+        .student-name { font-size: 22px; font-weight: 500; color: #1b2a4a; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; }
+        .student-name i { color: #4f8ea7; margin-right: 10px; }
+
+        .filter-bar { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+        .filter-bar label { font-weight: 600; color: #3b4c62; font-size: 14px; }
+        .filter-bar select { padding: 10px 20px; border-radius: 40px; border: 1px solid #e2e8f0; background: white; font-size: 14px; cursor: pointer; }
+
+        .stats-container { display: flex; flex-direction: column; gap: 28px; }
+
+        .overall-avg {
+            background: white;
+            border-radius: 28px;
+            padding: 24px 28px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(0,20,40,0.04);
+        }
+        .overall-avg .big-number { font-size: 52px; font-weight: 700; color: #1b2a4a; }
+        .overall-avg .label { font-size: 16px; color: #6b7d93; }
+        .overall-avg .label i { color: #f5b342; margin-right: 6px; }
+
+        .distribution-block {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 20px 28px;
+            box-shadow: 0 4px 16px rgba(0,20,40,0.03);
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+        .grade-pills {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .grade-pill {
+            padding: 6px 20px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.8);
+            color: #2d3748;
+        }
+        .grade-pill .count { font-weight: 700; color: #1b2a4a; }
+        .grade-pill.weak { background: rgba(235, 87, 87, 0.15); border-color: rgba(235, 87, 87, 0.3); }
+
+        .block-stat {
+            background: white;
+            border-radius: 28px;
+            padding: 24px 28px;
+            box-shadow: 0 4px 16px rgba(0,20,40,0.04);
+            overflow-x: auto;
+            transition: 0.3s;
+        }
+        .block-stat .block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .block-stat .block-header h3 { font-size: 20px; color: #1b2a4a; }
+        .block-stat .block-header .avg { font-size: 16px; color: #6b7d93; }
+
+        .chart-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            padding-top: 10px;
+            min-height: 140px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .chart-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 36px;
+        }
+        .chart-item .bar {
+            width: 28px;
+            border-radius: 6px 6px 0 0;
+            background: #4f8ea7;
+            transition: height 0.4s;
+            min-height: 4px;
+        }
+        .chart-item .bar.weak { background: #eb5757; }
+        .chart-item .bar-label {
+            font-size: 11px;
+            color: #6b7d93;
+            margin-top: 4px;
+            text-align: center;
+        }
+        .chart-item .grade-number {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1b2a4a;
+            margin-bottom: 4px;
+        }
+        .chart-item .grade-number .star-icon {
+            color: #f5b342;
+            font-size: 14px;
+            margin-left: 2px;
+        }
+        .chart-item .grade-number.weak { color: #eb5757; }
+
+        .weak-marker {
+            display: inline-block;
+            background: #eb5757;
+            color: white;
+            font-size: 10px;
+            padding: 1px 8px;
+            border-radius: 40px;
+            margin-left: 6px;
+            font-weight: 600;
+        }
+
+        .empty-message { text-align: center; padding: 40px 0; color: #8a9bb0; font-size: 16px; }
+        .empty-message i { font-size: 40px; display: block; margin-bottom: 12px; color: #d1d9e3; }
+        .empty-message .sub { font-size: 14px; color: #a0b0c0; margin-top: 8px; }
+
+        /* Рекомендации — сворачиваемый блок */
+        .recommendation-block {
+            background: #f8fafc;
+            border-radius: 28px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            border-left: 6px solid #4f8ea7;
+        }
+        .recommendation-block .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .recommendation-block .header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1b2a4a;
+        }
+        .recommendation-block .header h3 i { color: #f5b342; margin-right: 8px; }
+        .rec-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eef2f6;
+        }
+        .rec-item:last-child { border-bottom: none; }
+        .rec-item .text { font-size: 14px; color: #1e2a3a; }
+        .rec-item .meta { display: flex; align-items: center; gap: 8px; }
+        .rec-item .meta .date { font-size: 11px; color: #6b7d93; }
+        .rec-item .meta .delete-btn { background: none; border: none; color: #e53e3e; cursor: pointer; }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            color: #4f8ea7;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+        .toggle-btn:hover { color: #2c3e50; }
+
+        .rec-list { transition: all 0.3s ease; }
+        .rec-list.collapsed .rec-item:nth-child(n+2) { display: none; }
+
+        @media (max-width: 700px) {
+            .chart-item { min-width: 28px; }
+            .chart-item .bar { width: 20px; }
+            .distribution-block { padding: 16px 20px; }
+            .grade-pill { padding: 4px 14px; font-size: 13px; }
+            .chart-item .grade-number { font-size: 14px; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            .recommendation-block { padding: 16px 18px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1><i class="fas fa-chart-pie"></i> Статистика</h1>
+        <a href="/teacher" class="back-btn"><i class="fas fa-arrow-left"></i> Назад</a>
+    </div>
+
+    <div class="student-name">
+        <i class="fas fa-user"></i> {{ student.full_name }}
+    </div>
+
+    <!-- Рекомендации (сворачиваемые) -->
+    <div class="recommendation-block">
+        <div class="header">
+            <h3><i class="fas fa-lightbulb"></i> Рекомендации для ученика</h3>
+            <div>
+                {% if session.role == 'teacher' %}
+                    <button onclick="document.getElementById('recForm').style.display='block'" style="background: #4f8ea7; color: white; border: none; padding: 6px 16px; border-radius: 40px; cursor: pointer; font-weight: 500; font-size: 13px; margin-right: 8px;">
+                        <i class="fas fa-plus"></i> Добавить
+                    </button>
+                {% endif %}
+                {% if recommendations|length > 1 %}
+                    <button class="toggle-btn" id="recToggleBtn">Показать все</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Форма добавления (только для учителя) -->
+        {% if session.role == 'teacher' %}
+            <form method="POST" action="/add_recommendation/{{ student.id }}" id="recForm" style="display: none; margin-bottom: 16px;">
+                <textarea name="text" placeholder="Например: Внимание! Ученику стоит повторить тему 'Импульс' перед следующим занятием." style="width:100%; padding: 12px; border-radius: 16px; border: 1px solid #e2e8f0; min-height: 60px; margin-bottom: 8px;"></textarea>
+                <button type="submit" style="background: #2c3e50; color: white; border: none; padding: 8px 20px; border-radius: 40px; cursor: pointer; font-weight: 500;">Сохранить</button>
+                <button type="button" onclick="document.getElementById('recForm').style.display='none'" style="background: #eef2f6; color: #2d3748; border: none; padding: 8px 20px; border-radius: 40px; cursor: pointer; font-weight: 500;">Отмена</button>
+            </form>
+        {% endif %}
+
+        <!-- Список рекомендаций -->
+        <div class="rec-list {% if recommendations|length > 1 %}collapsed{% endif %}" id="recList">
+            {% if recommendations %}
+                {% for rec in recommendations %}
+                    <div class="rec-item">
+                        <span class="text">{{ rec.text }}</span>
+                        <div class="meta">
+                            <span class="date">{{ rec.created_at[:16] }}</span>
+                            {% if session.role == 'teacher' %}
+                                <form method="POST" action="/delete_recommendation/{{ rec.id }}/{{ student.id }}" onsubmit="return confirm('Удалить рекомендацию?');">
+                                    <button type="submit" class="delete-btn"><i class="fas fa-times"></i></button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p style="color: #6b7d93; font-size: 14px;">Пока нет рекомендаций</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Фильтр -->
+    <div class="filter-bar">
+        <label for="weakFilter"><i class="fas fa-filter"></i> Показать:</label>
+        <select id="weakFilter">
+            <option value="all">Все занятия</option>
+            <option value="weak">Темы для отработки (менее 4★)</option>
+        </select>
+    </div>
+
+    <div class="stats-container">
+
+        <div class="overall-avg">
+            <div class="big-number">{{ overall_avg }}</div>
+            <div class="label"><i class="fas fa-star"></i> Средний балл за все занятия</div>
+        </div>
+
+        <div class="distribution-block" id="distributionBlock">
+            <div class="grade-pills">
+                {% set total_grades = [] %}
+                {% for block, data in blocks_stats.items() %}
+                    {% for g in data.grades %}
+                        {% set total_grades = total_grades.append(g) %}
+                    {% endfor %}
+                {% endfor %}
+
+                <span class="grade-pill">⭐ 5: <span class="count">{{ total_grades.count(5) }}</span></span>
+                <span class="grade-pill">⭐ 4: <span class="count">{{ total_grades.count(4) }}</span></span>
+                <span class="grade-pill grade-pill weak">⭐ 3: <span class="count">{{ total_grades.count(3) }}</span></span>
+                <span class="grade-pill grade-pill weak">⭐ 2: <span class="count">{{ total_grades.count(2) }}</span></span>
+                <span class="grade-pill grade-pill weak">⭐ 1: <span class="count">{{ total_grades.count(1) }}</span></span>
+            </div>
+        </div>
+
+        {% if blocks_stats %}
+            {% for block_name, data in blocks_stats.items() %}
+                {% set weak_count = 0 %}
+                {% for g in data.grades %}
+                    {% if g <= 3 %}
+                        {% set weak_count = weak_count + 1 %}
+                    {% endif %}
+                {% endfor %}
+
+                <div class="block-stat" data-block="{{ block_name }}" data-weak-count="{{ weak_count }}" data-total="{{ data.grades|length }}">
+                    <div class="block-header">
+                        <h3>
+                            {{ block_name }}
+                            {% if weak_count > 0 %}
+                                <span class="weak-marker">⚠️ {{ weak_count }} слабых</span>
+                            {% endif %}
+                        </h3>
+                        <span class="avg">Средний: {{ data.avg }}</span>
+                    </div>
+
+                    <div class="chart-row">
+                        {% for i in range(data.grades|length) %}
+                            {% set grade = data.grades[i] %}
+                            <div class="chart-item" data-grade="{{ grade }}">
+                                <div class="grade-number {% if grade <= 3 %}weak{% endif %}">
+                                    {{ grade }}<span class="star-icon">★</span>
+                                </div>
+                                <div class="bar {% if grade <= 3 %}weak{% endif %}" style="height: {{ grade * 20 }}px;"></div>
+                                <div class="bar-label">
+                                    {{ data.dates[i][5:7] }}.{{ data.dates[i][8:10] }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-message">
+                <i class="fas fa-chart-bar"></i>
+                Нет данных для статистики.
+            </div>
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script>
+    // === ФИЛЬТР «ТЕМЫ ДЛЯ ОТРАБОТКИ» ===
+    const weakFilter = document.getElementById('weakFilter');
+    const blockStats = document.querySelectorAll('.block-stat');
+    const distributionBlock = document.getElementById('distributionBlock');
+
+    weakFilter.addEventListener('change', function() {
+        const filterValue = this.value;
+
+        blockStats.forEach(block => {
+            const items = block.querySelectorAll('.chart-item');
+            let hasVisible = false;
+
+            items.forEach(item => {
+                const grade = parseInt(item.dataset.grade);
+                if (filterValue === 'all') {
+                    item.style.display = '';
+                    hasVisible = true;
+                } else if (filterValue === 'weak' && grade <= 3) {
+                    item.style.display = '';
+                    hasVisible = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            if (filterValue === 'weak' && !hasVisible) {
+                block.style.display = 'none';
+            } else {
+                block.style.display = '';
+            }
+        });
+
+        const pills = distributionBlock.querySelectorAll('.grade-pill');
+        pills.forEach(pill => {
+            if (filterValue === 'weak') {
+                const text = pill.textContent;
+                if (text.includes('⭐ 3') || text.includes('⭐ 2') || text.includes('⭐ 1')) {
+                    pill.style.background = 'rgba(235, 87, 87, 0.2)';
+                    pill.style.borderColor = 'rgba(235, 87, 87, 0.4)';
+                } else {
+                    pill.style.background = '';
+                    pill.style.borderColor = '';
+                }
+            } else {
+                pill.style.background = '';
+                pill.style.borderColor = '';
+            }
+        });
+    });
+
+    // === СВОРАЧИВАНИЕ РЕКОМЕНДАЦИЙ ===
+    const recToggleBtn = document.getElementById('recToggleBtn');
+    const recList = document.getElementById('recList');
+
+    if (recToggleBtn) {
+        recToggleBtn.addEventListener('click', function() {
+            const isCollapsed = recList.classList.toggle('collapsed');
+            this.textContent = isCollapsed ? 'Показать все' : 'Скрыть';
+        });
+    }
+</script>
+</body>
+</html>

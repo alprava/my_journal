@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Банк тем</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
+        body { background: #eef2f6; padding: 30px 20px; color: #1e2a3a; }
+        .container { max-width: 900px; margin: 0 auto; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .header h1 { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #1b2a4a, #3a5a7a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header h1 i { -webkit-text-fill-color: initial; color: #4f8ea7; margin-right: 10px; }
+        .back-btn { background: #eef2f6; padding: 8px 20px; border-radius: 40px; text-decoration: none; color: #2d3748; font-weight: 600; }
+        .back-btn:hover { background: #dce2ea; }
+
+        .card { background: white; border-radius: 28px; padding: 28px 32px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,20,40,0.04); }
+
+        .form-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .form-row input, .form-row select { flex: 1; min-width: 150px; padding: 12px 18px; border-radius: 20px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 15px; }
+        .form-row button { background: #2c3e50; color: white; border: none; padding: 12px 28px; border-radius: 40px; font-weight: 600; cursor: pointer; }
+        .form-row button:hover { background: #1b2a3a; }
+
+        .block-group { margin-bottom: 24px; }
+        .block-group h3 { font-size: 18px; font-weight: 600; color: #1b2a4a; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+        .block-group h3 form { display: inline; }
+        .block-group h3 button { background: none; border: none; color: #e53e3e; cursor: pointer; font-size: 14px; }
+
+        .topic-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px; background: #f8fafc; border-radius: 12px; margin-bottom: 6px; }
+        .topic-item .name { font-weight: 500; }
+        .topic-item form { display: inline; }
+        .topic-item button { background: none; border: none; color: #e53e3e; cursor: pointer; font-size: 14px; }
+
+        .empty-message { color: #8a9bb0; text-align: center; padding: 20px 0; }
+        .flash-message { background: #d4edda; color: #1a6e4a; padding: 14px 24px; border-radius: 40px; margin-bottom: 24px; font-weight: 500; }
+
+        .section-title { font-size: 16px; font-weight: 600; color: #1b2a4a; margin-bottom: 14px; border-bottom: 2px solid #eef2f6; padding-bottom: 10px; }
+        .section-title i { color: #4f8ea7; margin-right: 10px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1><i class="fas fa-database"></i> Банк тем</h1>
+        <a href="/teacher" class="back-btn"><i class="fas fa-arrow-left"></i> Назад</a>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}<div class="flash-message">{{ messages[0] }}</div>{% endif %}
+    {% endwith %}
+
+    <!-- Добавление раздела -->
+    <div class="card">
+        <div class="section-title"><i class="fas fa-folder-plus"></i> Добавить раздел</div>
+        <form method="POST" action="/add_block" class="form-row">
+            <input type="text" name="name" placeholder="Название раздела (например: Квантовая физика)" required>
+            <button type="submit"><i class="fas fa-plus"></i> Добавить</button>
+        </form>
+    </div>
+
+    <!-- Добавление темы -->
+    <div class="card">
+        <div class="section-title"><i class="fas fa-plus-circle"></i> Добавить тему</div>
+        <form method="POST" action="/add_topic" class="form-row">
+            <input type="text" name="name" placeholder="Название темы" required>
+            <select name="block_id" required>
+                <option value="">Выберите раздел</option>
+                {% for b in blocks %}
+                    <option value="{{ b.id }}">{{ b.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit"><i class="fas fa-plus"></i> Добавить</button>
+        </form>
+    </div>
+
+    <!-- Список всех разделов и тем -->
+    <div class="card">
+        <div class="section-title"><i class="fas fa-list"></i> Все темы</div>
+        {% if blocks %}
+            {% for b in blocks %}
+                <div class="block-group">
+                    <h3>
+                        <i class="fas fa-book-open" style="color:#4f8ea7;"></i> {{ b.name }}
+                        <form method="POST" action="/delete_block" onsubmit="return confirm('Удалить раздел со всеми темами?');">
+                            <input type="hidden" name="block_id" value="{{ b.id }}">
+                            <button type="submit"><i class="fas fa-trash-alt"></i></button>
+                        </form>
+                    </h3>
+                    {% for t in topics %}
+                        {% if t.block_id == b.id %}
+                            <div class="topic-item">
+                                <span class="name">{{ t.name }}</span>
+                                <form method="POST" action="/delete_topic" onsubmit="return confirm('Удалить тему?');">
+                                    <input type="hidden" name="topic_id" value="{{ t.id }}">
+                                    <button type="submit"><i class="fas fa-times"></i></button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% set has_topics = false %}
+                    {% for t in topics %}
+                        {% if t.block_id == b.id %}{% set has_topics = true %}{% endif %}
+                    {% endfor %}
+                    {% if not has_topics %}
+                        <div class="empty-message">В этом разделе пока нет тем</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-message">📭 У вас пока нет разделов. Добавьте первый!</div>
+        {% endif %}
+    </div>
+
+</div>
+</body>
+</html>

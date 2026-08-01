@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет репетитора</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background: #eef2f6; padding: 30px 20px; color: #1e2a3a; }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .header h1 { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, #1b2a4a, #3a5a7a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header h1 i { -webkit-text-fill-color: initial; color: #4f8ea7; margin-right: 10px; }
+        .header .user-icon {
+            background: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            color: #1b2a4a;
+            font-size: 18px;
+        }
+
+        .btn-primary {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 60px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
+        }
+        .btn-primary:hover { background: #1b2a3a; transform: scale(1.02); }
+
+        .glass-card {
+            background: white;
+            border-radius: 28px;
+            padding: 32px 36px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(0, 20, 40, 0.04);
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .two-columns { display: grid; grid-template-columns: 1fr 1.3fr; gap: 40px; }
+        @media (max-width: 1000px) { .two-columns { grid-template-columns: 1fr; } }
+
+        .form-group { margin-bottom: 22px; }
+        .form-group label { display: block; font-size: 14px; font-weight: 600; color: #3b4c62; margin-bottom: 8px; }
+        .form-group label i { margin-right: 8px; color: #4f8ea7; width: 18px; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            font-size: 15px;
+            background: #f8fafc;
+            transition: 0.2s;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #4f8ea7;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(79, 142, 167, 0.08);
+        }
+        textarea { resize: vertical; min-height: 60px; }
+
+        .stars-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .stars-wrapper label {
+            font-weight: 600;
+            color: #3b4c62;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        .stars-group { display: flex; gap: 8px; direction: rtl; justify-content: flex-start; }
+        .stars-group input { display: none; }
+        .stars-group label { font-size: 34px; color: #d1d9e3; cursor: pointer; transition: 0.15s; }
+        .stars-group label:hover,
+        .stars-group label:hover ~ label,
+        .stars-group input:checked ~ label { color: #f5b342; }
+
+        .checkbox-group { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+        .custom-checkbox {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 28px;
+            background: #d1d9e3;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.25s;
+            flex-shrink: 0;
+        }
+        .custom-checkbox::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            top: 3px;
+            left: 3px;
+            border-radius: 50%;
+            transition: 0.25s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .custom-checkbox.active { background: #4f8ea7; }
+        .custom-checkbox.active::after { left: 23px; }
+        .custom-checkbox input { display: none; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(20, 30, 50, 0.5);
+            backdrop-filter: blur(6px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: white;
+            max-width: 450px;
+            width: 100%;
+            padding: 36px 32px;
+            border-radius: 32px;
+            box-shadow: 0 40px 80px -20px rgba(0,0,0,0.3);
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn { from { opacity:0; transform: scale(0.95); } to { opacity:1; transform: scale(1); } }
+        .modal-box .close-btn { float: right; background: none; border: none; font-size: 28px; cursor: pointer; color: #8a9bb0; }
+        .modal-box h2 { font-size: 22px; margin-bottom: 16px; color: #1b2a4a; }
+        .modal-box input { width: 100%; padding: 14px 18px; border: 1px solid #e2e8f0; border-radius: 20px; margin-bottom: 14px; font-size: 15px; background: #f8fafc; }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { text-align: left; padding: 14px 10px 14px 0; font-weight: 600; color: #4a5e74; border-bottom: 2px solid #e2e8f0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        td { padding: 14px 10px 14px 0; border-bottom: 1px solid #ecf1f6; color: #1e2a3a; }
+        .status-badge { display: inline-block; padding: 4px 16px; border-radius: 40px; font-size: 12px; font-weight: 600; }
+        .status-paid { background: #d4edda; color: #1a6e4a; }
+        .status-unpaid { background: #f8d7da; color: #b34a4a; }
+        .subtopic-text { color: #5a6f84; font-size: 13px; display: block; margin-top: 2px; }
+        .lesson-grade { font-weight: 600; color: #f5b342; letter-spacing: 1px; font-size: 16px; }
+        .student-block { margin-top: 30px; border-top: 2px dashed #e2e8f0; padding-top: 25px; }
+        .student-block:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+        .student-block h3 { font-size: 20px; margin-bottom: 14px; color: #1b2a4a; }
+        .empty-message { color: #8a9bb0; text-align: center; padding: 30px 0; }
+        .flash-message { background: #d4edda; color: #1a6e4a; padding: 14px 24px; border-radius: 40px; margin-bottom: 24px; font-weight: 500; }
+
+        .btn-small {
+            background: #4f8ea7;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-size: 13px;
+            margin-left: 12px;
+        }
+        .btn-small:hover { background: #3a6f84; }
+
+        .plan-select-wrapper {
+            margin-top: 4px;
+        }
+        .plan-select-wrapper .hint {
+            font-size: 13px;
+            color: #6b7d93;
+            margin-top: 6px;
+        }
+
+        .form-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1b2a4a;
+            margin-bottom: 20px;
+        }
+        .form-title i { color: #4f8ea7; margin-right: 10px; }
+
+        .bottom-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 10px;
+        }
+        @media (max-width: 700px) { .bottom-row { grid-template-columns: 1fr; } }
+
+        .hint-text {
+            font-size: 12px;
+            color: #6b7d93;
+            margin-top: 4px;
+        }
+
+        /* ===== ВЕРТИКАЛЬНЫЙ ТУЛБАР ===== */
+        .toolbar {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: white;
+            border-radius: 20px;
+            padding: 10px 8px;
+            box-shadow: 0 8px 32px rgba(0, 20, 40, 0.12);
+            border: 1px solid rgba(255,255,255,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+            z-index: 999;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .toolbar a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 16px;
+            color: #6b7d93;
+            font-size: 18px;
+            text-decoration: none;
+            transition: 0.2s;
+            position: relative;
+        }
+        .toolbar a:hover {
+            background: #f0f4fa;
+            color: #1b2a4a;
+        }
+        .toolbar a.active {
+            background: #2c3e50;
+            color: white;
+        }
+        .toolbar a .tooltip {
+            position: absolute;
+            right: 52px;
+            background: #2c3e50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+        .toolbar a:hover .tooltip {
+            opacity: 1;
+        }
+        .toolbar .divider {
+            width: 24px;
+            height: 1px;
+            background: #eef2f6;
+            margin: 4px 0;
+        }
+
+        @media (max-width: 700px) {
+            .toolbar { top: 16px; right: 16px; padding: 8px 6px; }
+            .toolbar a { width: 34px; height: 34px; font-size: 16px; border-radius: 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1><i class="fas fa-user-tie"></i> Личный кабинет репетитора</h1>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}<div class="flash-message"><i class="fas fa-check-circle"></i> {{ messages[0] }}</div>{% endif %}
+    {% endwith %}
+
+    <!-- МОДАЛКА -->
+    <div class="modal-overlay" id="studentModal">
+        <div class="modal-box">
+            <button class="close-btn" id="closeModalBtn">&times;</button>
+            <h2><i class="fas fa-user-graduate" style="color:#4f8ea7;"></i> Новый ученик</h2>
+            <form method="POST" action="/add_student">
+                <input type="text" name="full_name" placeholder="Полное имя" required>
+                <input type="text" name="username" placeholder="Логин" required>
+                <input type="text" name="password" placeholder="Пароль" required>
+                <button type="submit" class="btn-primary" style="width:100%;"><i class="fas fa-save"></i> Добавить</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ФОРМА ЗАНЯТИЯ -->
+    <div class="glass-card">
+        <div class="form-title"><i class="fas fa-pen-fancy"></i> Записать занятие</div>
+        <form method="POST" action="/add_lesson">
+
+            <div class="two-columns">
+                <div>
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Ученик</label>
+                        <select name="student_id" required id="studentSelect">
+                            <option value="">Выберите ученика</option>
+                            {% for s in students %}<option value="{{ s.id }}">{{ s.full_name }}</option>{% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-calendar-alt"></i> Дата</label>
+                        <input type="date" name="date" required id="lessonDate">
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-book-open"></i> Тема</label>
+                        <select name="topic_id" required id="lessonTopic">
+                            <option value="">Выберите тему</option>
+                            {% for b in blocks %}
+                                <optgroup label="{{ b.name }}">
+                                    {% for t in topics %}{% if t.block_id == b.id %}<option value="{{ t.id }}">{{ t.name }}</option>{% endif %}{% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-tag"></i> Подтема</label>
+                        <input type="text" name="subtopic" placeholder="Например: Прямолинейное движение" required id="lessonSubtopic">
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-route"></i> Выбрать занятие из учебной траектории</label>
+                        <div class="plan-select-wrapper">
+                            <select name="plan_id" id="planSelect">
+                                <option value="">— Не привязывать (свободное занятие) —</option>
+                                {% for p in plans %}
+                                    <option value="{{ p.plan_id }}" 
+                                            data-student="{{ p.student_id }}"
+                                            data-topic="{{ p.topic_id }}"
+                                            data-date="{{ p.date }}"
+                                            data-subtopic="{{ p.subtopic }}"
+                                            data-topic-name="{{ p.topic_name }}">
+                                        {{ p.student_name }} — {{ p.topic_name }} ({{ p.date }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="hint">Выберите запланированное занятие — тема и дата заполнятся автоматически</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="stars-wrapper" style="margin-bottom: 22px;">
+                        <label><i class="fas fa-star"></i> Оценка за занятие</label>
+                        <div class="stars-group">
+                            <input type="radio" name="grade_lesson" value="5" id="lesson_5"><label for="lesson_5">★</label>
+                            <input type="radio" name="grade_lesson" value="4" id="lesson_4"><label for="lesson_4">★</label>
+                            <input type="radio" name="grade_lesson" value="3" id="lesson_3"><label for="lesson_3">★</label>
+                            <input type="radio" name="grade_lesson" value="2" id="lesson_2"><label for="lesson_2">★</label>
+                            <input type="radio" name="grade_lesson" value="1" id="lesson_1"><label for="lesson_1">★</label>
+                        </div>
+                    </div>
+
+                    <div class="stars-wrapper" style="margin-bottom: 22px;">
+                        <label><i class="fas fa-star-half-alt"></i> Оценка за ДЗ</label>
+                        <div class="stars-group">
+                            <input type="radio" name="grade_homework" value="5" id="hw_5"><label for="hw_5">★</label>
+                            <input type="radio" name="grade_homework" value="4" id="hw_4"><label for="hw_4">★</label>
+                            <input type="radio" name="grade_homework" value="3" id="hw_3"><label for="hw_3">★</label>
+                            <input type="radio" name="grade_homework" value="2" id="hw_2"><label for="hw_2">★</label>
+                            <input type="radio" name="grade_homework" value="1" id="hw_1"><label for="hw_1">★</label>
+                        </div>
+                        <div class="hint-text">Оценивается ДЗ, которое было задано на прошлом занятии</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-check-circle"></i> Статус оплаты</label>
+                        <div class="checkbox-group">
+                            <span style="color: #6b7d93;">Не оплачено</span>
+                            <label class="custom-checkbox" id="paymentToggle">
+                                <input type="checkbox" name="payment_status" value="Оплачено" id="paymentCheckbox">
+                            </label>
+                            <span style="color: #2c3e50; font-weight: 500;">Оплачено</span>
+                        </div>
+                        <input type="hidden" name="payment_status_hidden" id="paymentStatusHidden" value="Не оплачено">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-row">
+                <div class="form-group">
+                    <label><i class="fas fa-home"></i> ДЗ к следующему занятию</label>
+                    <textarea name="homework_desc" placeholder="Задача №34, параграф 12..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-comment"></i> Комментарий по занятию</label>
+                    <textarea name="comment_lesson" placeholder="Как прошло занятие..."></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width:100%; margin-top: 6px;">
+                <i class="fas fa-save"></i> Сохранить занятие
+            </button>
+        </form>
+    </div>
+
+    <!-- БЛОК УСПЕВАЕМОСТИ -->
+    <div class="glass-card">
+        <h3 style="margin-bottom: 20px; font-size: 20px;"><i class="fas fa-chart-line" style="color:#4f8ea7;"></i> Успеваемость учеников</h3>
+        {% if students %}
+            {% for s in students %}
+                <div class="student-block">
+                    <h3>
+                        <i class="fas fa-user-graduate" style="color:#4f8ea7;"></i> {{ s.full_name }}
+                        <a href="/student_plan/{{ s.id }}" class="btn-small"><i class="fas fa-route"></i> Траектория</a>
+                        <a href="/student_stats/{{ s.id }}" class="btn-small" style="background: #f5b342; color: #1b2a4a;"><i class="fas fa-chart-simple"></i> Статистика</a>
+                    </h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Дата</th><th>Тема / Подтема</th><th>Оценка за зан.</th><th>Оценка за ДЗ</th><th>ДЗ</th><th>Комментарий</th><th>Статус</th></tr></thead>
+                            <tbody>
+                                {% set has_lessons = false %}
+                                {% for lesson in lessons %}
+                                    {% if lesson.student_id == s.id %}
+                                        {% set has_lessons = true %}
+                                        <tr>
+                                            <td>{{ lesson.date }}</td>
+                                            <td><strong>{{ lesson.topic_name }}</strong><span class="subtopic-text">{{ lesson.subtopic }}</span></td>
+                                            <td class="lesson-grade">{% if lesson.grade_lesson %}{% for i in range(lesson.grade_lesson) %}★{% endfor %}{% else %}—{% endif %}</td>
+                                            <td class="lesson-grade">{% if lesson.grade_homework %}{% for i in range(lesson.grade_homework) %}★{% endfor %}{% else %}—{% endif %}</td>
+                                            <td>{{ lesson.homework_desc or '—' }}</td>
+                                            <td style="max-width: 150px; font-size: 13px; color: #4a5e74;">{{ lesson.comment_lesson or '' }}{% if lesson.comment_homework %}<br><span style="color: #6b7d93;">ДЗ: {{ lesson.comment_homework }}</span>{% endif %}</td>
+                                            <td>{% if lesson.payment_status == 'Оплачено' %}<span class="status-badge status-paid">✅ Оплачено</span>{% else %}<span class="status-badge status-unpaid">⏳ Не оплачено</span>{% endif %}</td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if not has_lessons %}<tr><td colspan="7" class="empty-message">📭 Занятий пока нет</td></tr>{% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-message"><i class="fas fa-users" style="margin-right: 10px;"></i> У вас пока нет учеников. Добавьте первого!</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== ВЕРТИКАЛЬНЫЙ ТУЛБАР ===== -->
+<div class="toolbar">
+    <a href="/teacher" class="active" title="Главная">
+        <i class="fas fa-home"></i>
+        <span class="tooltip">Главная</span>
+    </a>
+    <a href="#" id="openModalBtn" title="Добавить ученика">
+        <i class="fas fa-user-plus"></i>
+        <span class="tooltip">Добавить ученика</span>
+    </a>
+    <a href="/topic_bank" title="Банк тем">
+        <i class="fas fa-database"></i>
+        <span class="tooltip">Банк тем</span>
+    </a>
+    <div class="divider"></div>
+    <a href="/logout" title="Выйти">
+        <i class="fas fa-sign-out-alt"></i>
+        <span class="tooltip">Выйти</span>
+    </a>
+</div>
+
+<script>
+    // МОДАЛКА
+    const modal = document.getElementById('studentModal');
+    const openModalBtn = document.getElementById('openModalBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+
+    openModalBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        modal.classList.add('active');
+    });
+
+    closeModalBtn.addEventListener('click', function() {
+        modal.classList.remove('active');
+    });
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
+
+    // ГАЛОЧКА ОПЛАТЫ
+    const toggle = document.getElementById('paymentToggle');
+    const checkbox = document.getElementById('paymentCheckbox');
+    const hiddenInput = document.getElementById('paymentStatusHidden');
+    toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        checkbox.checked = !checkbox.checked;
+        toggle.classList.toggle('active');
+        hiddenInput.value = checkbox.checked ? 'Оплачено' : 'Не оплачено';
+    });
+    checkbox.addEventListener('change', function() {
+        toggle.classList.toggle('active');
+        hiddenInput.value = checkbox.checked ? 'Оплачено' : 'Не оплачено';
+    });
+    if (checkbox.checked) {
+        toggle.classList.add('active');
+        hiddenInput.value = 'Оплачено';
+    }
+
+    // АВТОЗАПОЛНЕНИЕ
+    document.getElementById('planSelect').addEventListener('change', function() {
+        const selected = this.options[this.selectedIndex];
+        const dateField = document.getElementById('lessonDate');
+        const topicField = document.getElementById('lessonTopic');
+        const subtopicField = document.getElementById('lessonSubtopic');
+
+        if (this.value === '') {
+            if (dateField) dateField.value = '';
+            if (topicField) topicField.value = '';
+            if (subtopicField) subtopicField.value = '';
+            return;
+        }
+
+        if (dateField) dateField.value = selected.dataset.date || '';
+        if (topicField) topicField.value = selected.dataset.topic || '';
+        if (subtopicField) subtopicField.value = selected.dataset.subtopic || '';
+    });
+
+    // ФИЛЬТР ПЛАНОВ ПО УЧЕНИКУ
+    document.getElementById('studentSelect').addEventListener('change', function() {
+        const studentId = this.value;
+        const planSelect = document.getElementById('planSelect');
+        const options = planSelect.querySelectorAll('option');
+
+        options.forEach(opt => {
+            if (opt.value === '') return;
+            const optStudent = opt.dataset.student;
+            if (studentId === '' || optStudent === studentId) {
+                opt.style.display = '';
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Журнал репетитора</title>
+    <style>
+        body { font-family: Arial; margin: 50px; background: #eef2f6; }
+        .container { max-width: 350px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.02); }
+        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border-radius: 12px; border: 1px solid #dce2ea; }
+        button { background: #2c3e50; color: white; border: none; cursor: pointer; font-weight: 600; }
+        button:hover { background: #1b2a3a; }
+        .error { color: red; }
+        h2 { color: #1f2a3a; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📚 Вход в журнал</h2>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}<p class="error">{{ messages[0] }}</p>{% endif %}
+        {% endwith %}
+        <form method="POST">
+            <input type="text" name="username" placeholder="Логин" required>
+            <input type="password" name="password" placeholder="Пароль" required>
+            <button type="submit">Войти</button>
+        </form>
+    </div>
+</body>
+</html>

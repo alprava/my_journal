@@ -1,0 +1,212 @@
+import sqlite3
+from flask import Flask, render_template, request, redirect, url_for, session, flash
+from functools import wraps
+
+app = Flask(__name__)
+app.secret_key = 'supersecretkey_replace_this_in_production'
+
+def get_db():
+    db = sqlite3.connect('progress.db')
+    db.row_factory = sqlite3.Row
+    return db
+
+def init_db():
+    db = get_db()
+    cursor = db.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT NOT NULL
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS students (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER UNIQUE NOT NULL,
+            full_name TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS blocks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS topics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            block_id INTEGER NOT NULL,
+            FOREIGN KEY (block_id) REFERENCES blocks (id)
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS lessons (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            topic_id INTEGER NOT NULL,
+            subtopic TEXT,
+            grade_lesson INTEGER,
+            grade_homework INTEGER,
+            homework_desc TEXT,
+            comment_lesson TEXT,
+            comment_homework TEXT,
+            payment_status TEXT DEFAULT 'Не оплачено',
+            FOREIGN KEY (student_id) REFERENCES students (id),
+            FOREIGN KEY (topic_id) REFERENCES topics (id)
+        )
+    ''')
+    
+    cursor.execute("SELECT * FROM users WHERE username='teacher'")
+    if not cursor.fetchone():
+        cursor.execute("INSERT INTO users (username, password, role) VALUES ('teacher', '123', 'teacher')")
+    
+    cursor.execute("SELECT * FROM blocks")
+    if not cursor.fetchone():
+        cursor.execute("INSERT INTO blocks (name) VALUES ('Механика')")
+        cursor.execute("INSERT INTO blocks (name) VALUES ('Термодинамика')")
+        cursor.execute("INSERT INTO blocks (name) VALUES ('Электричество')")
+        
+        cursor.execute("INSERT INTO topics (name, block_id) VALUES ('Кинематика', 1)")
+        cursor.execute("INSERT INTO topics (name, block_id) VALUES ('Законы Ньютона', 1)")
+        cursor.execute("INSERT INTO topics (name, block_id) VALUES ('Работа и энергия', 1)")
+    
+    db.commit()
+    db.close()
+
+def login_required(role=None):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                return redirect(url_for('login'))
+            if role and session.get('role') != role:
+                return "Доступ запрещен", 403
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+@app.route('/')
+def index():
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        db = get_db()
+        user = db.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password)).fetchone()
+        db.close()
+        if user:
+            session['user_id'] = user['id']
+            session['role'] = user['role']
+            session['username'] = user['username']
+            if user['role'] == 'teacher':
+                return redirect(url_for('teacher_dashboard'))
+            else:
+                return redirect(url_for('student_dashboard'))
+        else:
+            flash('Неверный логин или пароль')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
+@app.route('/teacher')
+@login_required(role='teacher')
+def teacher_dashboard():
+    db = get_db()
+    students = db.execute("SELECT * FROM students").fetchall()
+    blocks = db.execute("SELECT * FROM blocks").fetchall()
+    topics = db.execute("SELECT * FROM topics").fetchall()
+    lessons = db.execute('''
+        SELECT lessons.*, topics.name as topic_name 
+        FROM lessons 
+        JOIN topics ON lessons.topic_id = topics.id
+        ORDER BY lessons.date DESC
+    ''').fetchall()
+    db.close()
+    return render_template('teacher_dashboard.html', students=students, blocks=blocks, topics=topics, lessons=lessons)
+
+@app.route('/add_student', methods=['POST'])
+@login_required(role='teacher')
+def add_student():
+    full_name = request.form['full_name']
+    username = request.form['username']
+    password = request.form['password']
+    db = get_db()
+    try:
+        cursor = db.cursor()
+        cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, 'student')", (username, password))
+        user_id = cursor.lastrowid
+        cursor.execute("INSERT INTO students (user_id, full_name) VALUES (?, ?)", (user_id, full_name))
+        db.commit()
+        flash('Ученик добавлен!')
+    except sqlite3.IntegrityError:
+        flash('Пользователь с таким логином уже существует')
+    db.close()
+    return redirect(url_for('teacher_dashboard'))
+
+@app.route('/add_lesson', methods=['POST'])
+@login_required(role='teacher')
+def add_lesson():
+    student_id = request.form['student_id']
+    date = request.form['date']
+    topic_id = request.form['topic_id']
+    subtopic = request.form['subtopic']
+    grade_lesson = request.form.get('grade_lesson', type=int)
+    grade_homework = request.form.get('grade_homework', type=int)
+    homework_desc = request.form['homework_desc']
+    comment_lesson = request.form['comment_lesson']
+    comment_homework = request.form['comment_homework']
+    payment_status = request.form['payment_status']
+    
+    db = get_db()
+    db.execute('''
+        INSERT INTO lessons 
+        (student_id, date, topic_id, subtopic, grade_lesson, grade_homework, homework_desc, comment_lesson, comment_homework, payment_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (student_id, date, topic_id, subtopic, grade_lesson, grade_homework, homework_desc, comment_lesson, comment_homework, payment_status))
+    db.commit()
+    db.close()
+    flash('Занятие добавлено!')
+    return redirect(url_for('teacher_dashboard'))
+
+@app.route('/student')
+@login_required(role='student')
+def student_dashboard():
+    db = get_db()
+    user_id = session['user_id']
+    student = db.execute("SELECT * FROM students WHERE user_id=?", (user_id,)).fetchone()
+    if not student:
+        return "Ученик не найден"
+    
+    lessons = db.execute('''
+        SELECT lessons.*, topics.name as topic_name, blocks.name as block_name 
+        FROM lessons 
+        JOIN topics ON lessons.topic_id = topics.id 
+        JOIN blocks ON topics.block_id = blocks.id
+        WHERE lessons.student_id=?
+        ORDER BY lessons.date DESC
+    ''', (student['id'],)).fetchall()
+    db.close()
+    return render_template('student_dashboard.html', student=student, lessons=lessons)
+
+if __name__ == '__main__':
+    init_db()
+    app.run(debug=True, host='0.0.0.0', port=5000)
+
+application = app
+

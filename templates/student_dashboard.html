@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Мой прогресс</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background: #eef2f6; color: #1e2a3a; padding-bottom: 80px; }
+
+        .container { max-width: 1000px; margin: 0 auto; padding: 16px; }
+
+        /* ШАПКА */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        .header h1 { font-size: 22px; font-weight: 700; background: linear-gradient(135deg, #1b2a4a, #3a5a7a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header h1 i { -webkit-text-fill-color: initial; color: #4f8ea7; margin-right: 6px; }
+
+        .user-info { display: flex; align-items: center; gap: 10px; background: white; padding: 4px 12px 4px 16px; border-radius: 60px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .user-info span { font-size: 13px; font-weight: 500; color: #1b2a4a; }
+        .logout-btn { background: #eef2f6; color: #2d3748; padding: 4px 14px; border-radius: 40px; text-decoration: none; font-weight: 600; font-size: 12px; }
+
+        /* ВКЛАДКИ (скрыты на мобильных, показываем через свайп) */
+        .tabs { display: flex; gap: 6px; margin-bottom: 20px; background: white; padding: 4px; border-radius: 60px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .tab-btn { flex: 1; padding: 10px 14px; border: none; border-radius: 40px; font-weight: 600; font-size: 13px; cursor: pointer; background: transparent; color: #6b7d93; transition: 0.2s; white-space: nowrap; }
+        .tab-btn:hover { background: #f0f4fa; }
+        .tab-btn.active { background: #2c3e50; color: white; box-shadow: 0 2px 8px rgba(44,62,80,0.15); }
+        .tab-btn i { margin-right: 4px; }
+
+        .tab-content { display: none; animation: fadeIn 0.25s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: translateY(0); } }
+
+        /* КАРТОЧКИ ЗАНЯТИЙ (компактные для мобильных) */
+        .lesson-card {
+            background: white;
+            border-radius: 20px;
+            padding: 16px 18px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 12px rgba(0,20,40,0.04);
+            border-left: 5px solid #4f8ea7;
+            transition: 0.2s;
+        }
+        .lesson-card .header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+        .lesson-card .date { font-size: 13px; color: #6b7d93; }
+        .lesson-card .block-tag { font-size: 11px; padding: 2px 12px; border-radius: 40px; background: #eef2f6; color: #3b4c62; }
+        .lesson-card .title { font-size: 17px; font-weight: 600; color: #1b2a4a; margin: 2px 0; }
+        .lesson-card .subtopic { font-size: 14px; color: #4a5e74; margin-bottom: 6px; }
+
+        .lesson-card .details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+        .lesson-card .details .item { background: #f8fafc; padding: 6px 10px; border-radius: 12px; }
+        .lesson-card .details .item .label { font-size: 10px; color: #6b7d93; text-transform: uppercase; letter-spacing: 0.3px; }
+        .lesson-card .details .item .value { font-size: 16px; font-weight: 600; color: #1b2a4a; }
+        .lesson-card .details .item .value.stars { color: #f5b342; letter-spacing: 1px; font-size: 14px; }
+
+        .lesson-card .comment { background: #f8fafc; padding: 10px 14px; border-radius: 14px; margin: 8px 0; font-size: 13px; color: #2d3748; }
+        .lesson-card .comment .label { font-size: 10px; color: #6b7d93; text-transform: uppercase; letter-spacing: 0.3px; }
+
+        .lesson-card .footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .lesson-card .footer .homework { font-size: 13px; color: #4a5e74; }
+        .lesson-card .footer .homework i { color: #4f8ea7; margin-right: 4px; }
+
+        .status-badge { display: inline-block; padding: 3px 12px; border-radius: 40px; font-size: 12px; font-weight: 600; }
+        .status-paid { background: #d4edda; color: #1a6e4a; }
+        .status-unpaid { background: #f8d7da; color: #b34a4a; }
+
+        .format-badge { font-size: 11px; padding: 2px 10px; border-radius: 20px; background: #eef2f6; }
+        .format-badge.online { background: #dbeafe; color: #1e40af; }
+        .format-badge.offline { background: #fef3c7; color: #92400e; }
+
+        .empty-message { text-align: center; padding: 30px 0; color: #8a9bb0; font-size: 15px; }
+        .empty-message i { font-size: 32px; display: block; margin-bottom: 8px; color: #d1d9e3; }
+
+        /* СТАТИСТИКА (компактная) */
+        .overall-avg { background: white; border-radius: 24px; padding: 16px 20px; text-align: center; box-shadow: 0 2px 12px rgba(0,20,40,0.04); }
+        .overall-avg .big-number { font-size: 40px; font-weight: 700; color: #1b2a4a; }
+        .overall-avg .label { font-size: 14px; color: #6b7d93; }
+
+        .distribution-block { background: rgba(255,255,255,0.5); backdrop-filter: blur(8px); border-radius: 24px; padding: 14px 18px; box-shadow: 0 2px 8px rgba(0,20,40,0.03); border: 1px solid rgba(255,255,255,0.6); }
+        .grade-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+        .grade-pill { padding: 4px 14px; border-radius: 40px; font-size: 13px; font-weight: 500; background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.8); color: #2d3748; }
+        .grade-pill .count { font-weight: 700; color: #1b2a4a; }
+        .grade-pill.weak { background: rgba(235,87,87,0.15); border-color: rgba(235,87,87,0.3); }
+
+        .block-stat { background: white; border-radius: 24px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(0,20,40,0.04); overflow-x: auto; }
+        .block-stat .block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+        .block-stat .block-header h3 { font-size: 17px; color: #1b2a4a; }
+        .block-stat .block-header .avg { font-size: 14px; color: #6b7d93; }
+
+        .chart-row { display: flex; align-items: flex-end; gap: 8px; padding-top: 6px; min-height: 120px; justify-content: center; flex-wrap: wrap; }
+        .chart-item { display: flex; flex-direction: column; align-items: center; min-width: 30px; }
+        .chart-item .bar { width: 22px; border-radius: 4px 4px 0 0; background: #4f8ea7; transition: height 0.4s; min-height: 4px; }
+        .chart-item .bar.weak { background: #eb5757; }
+        .chart-item .bar-label { font-size: 9px; color: #6b7d93; margin-top: 3px; text-align: center; }
+        .chart-item .grade-number { font-size: 14px; font-weight: 700; color: #1b2a4a; margin-bottom: 2px; }
+        .chart-item .grade-number .star-icon { color: #f5b342; font-size: 12px; margin-left: 1px; }
+        .chart-item .grade-number.weak { color: #eb5757; }
+
+        .weak-marker { display: inline-block; background: #eb5757; color: white; font-size: 9px; padding: 1px 8px; border-radius: 40px; margin-left: 4px; font-weight: 600; }
+
+        /* Рекомендации */
+        .recommendation-block { background: #f8fafc; border-radius: 24px; padding: 14px 18px; margin-bottom: 16px; border-left: 5px solid #4f8ea7; }
+        .recommendation-block .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .recommendation-block .header h3 { font-size: 15px; font-weight: 600; color: #1b2a4a; }
+        .recommendation-block .header h3 i { color: #f5b342; margin-right: 6px; }
+        .rec-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eef2f6; }
+        .rec-item .text { font-size: 13px; color: #1e2a3a; }
+        .rec-item .meta .date { font-size: 10px; color: #6b7d93; }
+
+        .toggle-btn { background: none; border: none; color: #4f8ea7; font-weight: 600; font-size: 12px; cursor: pointer; padding: 4px 0; }
+        .rec-list.collapsed .rec-item:nth-child(n+2) { display: none; }
+
+        /* Траектория */
+        .trajectory-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: white; border-radius: 16px; margin-bottom: 8px; border-left: 4px solid #4f8ea7; }
+        .trajectory-item .icon { font-size: 18px; }
+        .trajectory-item .info { flex: 1; }
+        .trajectory-item .info .topic { font-weight: 600; color: #1b2a4a; font-size: 15px; }
+        .trajectory-item .info .meta { font-size: 12px; color: #6b7d93; }
+
+        /* ===== МОБИЛЬНОЕ НИЖНЕЕ МЕНЮ ===== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 6px 0 env(safe-area-inset-bottom);
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+            border-top: 1px solid rgba(0,0,0,0.04);
+            z-index: 1000;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .bottom-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: none;
+            border: none;
+            color: #6b7d93;
+            font-size: 10px;
+            font-weight: 500;
+            padding: 4px 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+        .bottom-nav .nav-item i {
+            font-size: 20px;
+            margin-bottom: 2px;
+            transition: 0.2s;
+        }
+        .bottom-nav .nav-item.active {
+            color: #1b2a4a;
+        }
+        .bottom-nav .nav-item.active i {
+            color: #4f8ea7;
+        }
+        .bottom-nav .nav-item .badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #eb5757;
+            color: white;
+            font-size: 9px;
+            padding: 1px 6px;
+            border-radius: 40px;
+            font-weight: 700;
+        }
+
+        /* Скрываем верхние вкладки на мобильных */
+        @media (max-width: 600px) {
+            .tabs { display: none; }
+            .container { padding: 12px; }
+            body { padding-bottom: 70px; }
+            .header h1 { font-size: 20px; }
+            .bottom-nav { display: flex; }
+        }
+
+        @media (min-width: 601px) {
+            .bottom-nav { display: none; }
+            .tabs { display: flex; }
+        }
+
+        /* Стили для свайпа */
+        .swipe-area {
+            touch-action: pan-y;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- ШАПКА -->
+    <div class="header">
+        <h1><i class="fas fa-chart-pie"></i> Прогресс</h1>
+        <div class="user-info">
+            <span><i class="fas fa-user-circle"></i> {{ student.full_name }}</span>
+            <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i></a>
+        </div>
+    </div>
+
+    <!-- ВКЛАДКИ (десктоп) -->
+    <div class="tabs" id="desktopTabs">
+        <button class="tab-btn active" data-tab="upcoming"><i class="fas fa-calendar-day"></i> Ближайшие</button>
+        <button class="tab-btn" data-tab="history"><i class="fas fa-history"></i> Прогресс</button>
+        <button class="tab-btn" data-tab="trajectory"><i class="fas fa-route"></i> Траектория</button>
+        <button class="tab-btn" data-tab="stats"><i class="fas fa-chart-simple"></i> Статистика</button>
+    </div>
+
+    <!-- СВАЙП-ОБЛАСТЬ -->
+    <div class="swipe-area" id="swipeArea">
+
+        <!-- ВКЛАДКА 1: БЛИЖАЙШИЕ -->
+        <div class="tab-content active" id="tab-upcoming">
+            {% set upcoming = [] %}
+            {% for l in lessons %}
+                {% if l.date_obj >= today and l.date_obj <= today + timedelta(days=7) %}
+                    {% set upcoming = upcoming.append(l) %}
+                {% endif %}
+            {% endfor %}
+
+            {% if upcoming %}
+                {% for l in upcoming %}
+                    <div class="lesson-card" style="border-left-color: #4f8ea7;">
+                        <div class="header-row">
+                            <span class="date"><i class="far fa-calendar-alt"></i> {{ l.date }}</span>
+                            <span class="block-tag">{{ l.block_name }}</span>
+                        </div>
+                        <div class="title">{{ l.topic_name }}</div>
+                        <div class="subtopic">{{ l.subtopic }}</div>
+
+                        <div class="details">
+                            <div class="item">
+                                <div class="label"><i class="fas fa-video"></i> Формат</div>
+                                <div class="value" style="font-size:13px;">
+                                    <span class="format-badge {% if l.format == 'Онлайн' %}online{% else %}offline{% endif %}">
+                                        {% if l.format == 'Онлайн' %}💻 Онлайн{% else %}🏫 Очно{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="item">
+                                <div class="label"><i class="fas fa-link"></i> Ссылки</div>
+                                <div class="value" style="font-size:12px;">
+                                    {% if l.link_call %}<a href="{{ l.link_call }}" target="_blank">🔗</a>{% endif %}
+                                    {% if l.link_board %} <a href="{{ l.link_board }}" target="_blank">📝</a>{% endif %}
+                                    {% if l.address %}📍{% endif %}
+                                    {% if not l.link_call and not l.link_board and not l.address %}—{% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if l.teacher_note %}
+                            <div style="font-size: 12px; color: #6b7d93; background: #fef9e7; padding: 6px 12px; border-radius: 12px; border-left: 3px solid #f5b342; margin-top: 4px;">
+                                <i class="fas fa-sticky-note" style="color:#f5b342;"></i> {{ l.teacher_note }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-message">
+                    <i class="fas fa-calendar-check"></i>
+                    На ближайшую неделю занятий нет.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- ВКЛАДКА 2: ПРОГРЕСС -->
+        <div class="tab-content" id="tab-history">
+            <div class="filter-bar" style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center;">
+                <label style="font-weight: 600; color: #3b4c62; font-size: 13px;"><i class="fas fa-calendar-alt"></i> Период:</label>
+                <select id="monthFilter" style="padding: 8px 14px; border-radius: 40px; border: 1px solid #e2e8f0; background: white; font-size: 13px; flex: 1; min-width: 120px;">
+                    <option value="all">Все месяцы</option>
+                    {% for m in months %}
+                        <option value="{{ m }}">{{ m }}</option>
+                    {% endfor %}
+                </select>
+                <button class="reset-btn" id="resetFilter" style="background: #eef2f6; border: none; padding: 8px 16px; border-radius: 40px; cursor: pointer; font-weight: 500; color: #2d3748; font-size: 13px;"><i class="fas fa-undo"></i> Сбросить</button>
+                <span id="filterCount" style="font-size:12px; color:#6b7d93;"></span>
+            </div>
+
+            <div id="historyList">
+                {% set past = [] %}
+                {% for l in lessons %}
+                    {% if l.date_obj < today %}
+                        {% set past = past.append(l) %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if past %}
+                    {% for l in past %}
+                        <div class="lesson-card" style="border-left-color: #22c55e;" data-month="{{ l.date_obj.strftime('%Y-%m') }}">
+                            <div class="header-row">
+                                <span class="date"><i class="far fa-calendar-alt"></i> {{ l.date }}</span>
+                                <span class="block-tag">{{ l.block_name }}</span>
+                                {% if l.payment_status == 'Оплачено' %}
+                                    <span class="status-badge status-paid"><i class="fas fa-check"></i></span>
+                                {% else %}
+                                    <span class="status-badge status-unpaid"><i class="fas fa-clock"></i></span>
+                                {% endif %}
+                            </div>
+                            <div class="title">{{ l.topic_name }}</div>
+                            <div class="subtopic">{{ l.subtopic }}</div>
+
+                            <div class="details">
+                                <div class="item">
+                                    <div class="label"><i class="fas fa-star"></i> Оценка</div>
+                                    <div class="value stars">{% if l.grade_lesson %}{% for i in range(l.grade_lesson) %}★{% endfor %}{% else %}—{% endif %}</div>
+                                </div>
+                                <div class="item">
+                                    <div class="label"><i class="fas fa-star-half-alt"></i> ДЗ</div>
+                                    <div class="value stars">{% if l.grade_homework %}{% for i in range(l.grade_homework) %}★{% endfor %}{% else %}—{% endif %}</div>
+                                </div>
+                            </div>
+
+                            {% if l.comment_lesson %}
+                                <div class="comment">
+                                    <div class="label"><i class="fas fa-comment"></i> Комментарий</div>
+                                    {{ l.comment_lesson }}
+                                </div>
+                            {% endif %}
+
+                            <div class="footer">
+                                <span class="homework"><i class="fas fa-home"></i> {{ l.homework_desc or 'Не задано' }}</span>
+                                <span class="format-badge {% if l.format == 'Онлайн' %}online{% else %}offline{% endif %}">
+                                    {% if l.format == 'Онлайн' %}💻{% else %}🏫{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-message">
+                        <i class="fas fa-history"></i>
+                        Пока нет проведённых занятий.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 3: ТРАЕКТОРИЯ -->
+        <div class="tab-content" id="tab-trajectory">
+            <div style="background: white; border-radius: 24px; padding: 18px 20px; box-shadow: 0 2px 12px rgba(0,20,40,0.04);">
+                <h3 style="margin-bottom: 12px; font-size: 17px; color: #1b2a4a;">
+                    <i class="fas fa-route" style="color:#4f8ea7;"></i> Учебная траектория
+                </h3>
+
+                {% if lessons %}
+                    {% for l in lessons|sort(attribute='date') %}
+                        {% set is_passed = l.grade_lesson is not none %}
+                        <div class="trajectory-item" style="border-left-color: {% if is_passed %}#22c55e{% else %}#d1d5db{% endif %};">
+                            <span class="icon">{% if is_passed %}✅{% else %}🔒{% endif %}</span>
+                            <div class="info">
+                                <div class="topic" style="color: {% if is_passed %}#15803d{% else %}#6b7280{% endif %};">
+                                    {{ l.topic_name }}
+                                </div>
+                                <div class="meta">
+                                    {{ l.date }}
+                                    {% if l.subtopic %}— {{ l.subtopic }}{% endif %}
+                                    {% if is_passed %}
+                                        <span style="color: #15803d; margin-left: 4px;">⭐ {{ l.grade_lesson }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if is_passed %}
+                                <a href="/lesson_card/{{ l.id }}" style="background: #4f8ea7; color: white; padding: 4px 12px; border-radius: 40px; text-decoration: none; font-size: 11px; font-weight: 500; white-space: nowrap;">
+                                    <i class="fas fa-eye"></i> Подробнее
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-message">
+                        <i class="fas fa-inbox"></i>
+                        Пока нет занятий. Начните учиться!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 4: СТАТИСТИКА -->
+        <div class="tab-content" id="tab-stats">
+            <div class="recommendation-block">
+                <div class="header">
+                    <h3><i class="fas fa-lightbulb"></i> Рекомендации</h3>
+                    {% if recommendations|length > 1 %}
+                        <button class="toggle-btn" id="recToggleBtn">Показать все</button>
+                    {% endif %}
+                </div>
+                <div class="rec-list {% if recommendations|length > 1 %}collapsed{% endif %}" id="recList">
+                    {% if recommendations %}
+                        {% for rec in recommendations %}
+                            <div class="rec-item">
+                                <span class="text">{{ rec.text }}</span>
+                                <div class="meta">
+                                    <span class="date">{{ rec.created_at[:16] }}</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: #6b7d93; font-size: 13px;">Пока нет рекомендаций</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="overall-avg" style="margin-bottom: 14px;">
+                <div class="big-number">{{ overall_avg }}</div>
+                <div class="label"><i class="fas fa-star"></i> Средний балл</div>
+            </div>
+
+            <div class="distribution-block" style="margin-bottom: 14px;">
+                <div class="grade-pills">
+                    {% set total_grades = [] %}
+                    {% for block, data in blocks_stats.items() %}
+                        {% for g in data.grades %}
+                            {% set total_grades = total_grades.append(g) %}
+                        {% endfor %}
+                    {% endfor %}
+
+                    <span class="grade-pill">⭐5 <span class="count">{{ total_grades.count(5) }}</span></span>
+                    <span class="grade-pill">⭐4 <span class="count">{{ total_grades.count(4) }}</span></span>
+                    <span class="grade-pill weak">⭐3 <span class="count">{{ total_grades.count(3) }}</span></span>
+                    <span class="grade-pill weak">⭐2 <span class="count">{{ total_grades.count(2) }}</span></span>
+                    <span class="grade-pill weak">⭐1 <span class="count">{{ total_grades.count(1) }}</span></span>
+                </div>
+            </div>
+
+            {% if blocks_stats %}
+                {% for block_name, data in blocks_stats.items() %}
+                    {% set weak_count = 0 %}
+                    {% for g in data.grades %}
+                        {% if g <= 3 %}
+                            {% set weak_count = weak_count + 1 %}
+                        {% endif %}
+                    {% endfor %}
+
+                    <div class="block-stat" style="margin-bottom: 14px;">
+                        <div class="block-header">
+                            <h3>
+                                {{ block_name }}
+                                {% if weak_count > 0 %}
+                                    <span class="weak-marker">{{ weak_count }} слабых</span>
+                                {% endif %}
+                            </h3>
+                            <span class="avg">Средний: {{ data.avg }}</span>
+                        </div>
+
+                        <div class="chart-row">
+                            {% for i in range(data.grades|length) %}
+                                {% set grade = data.grades[i] %}
+                                <div class="chart-item" data-grade="{{ grade }}">
+                                    <div class="grade-number {% if grade <= 3 %}weak{% endif %}">
+                                        {{ grade }}<span class="star-icon">★</span>
+                                    </div>
+                                    <div class="bar {% if grade <= 3 %}weak{% endif %}" style="height: {{ grade * 16 }}px;"></div>
+                                    <div class="bar-label">
+                                        {{ data.dates[i][5:7] }}.{{ data.dates[i][8:10] }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-message">
+                    <i class="fas fa-chart-bar"></i>
+                    Нет данных для статистики.
+                </div>
+            {% endif %}
+        </div>
+
+    </div><!-- /swipe-area -->
+
+</div><!-- /container -->
+
+<!-- ===== МОБИЛЬНОЕ НИЖНЕЕ МЕНЮ ===== -->
+<div class="bottom-nav" id="bottomNav">
+    <button class="nav-item active" data-tab="upcoming">
+        <i class="fas fa-calendar-day"></i>
+        <span>Ближайшие</span>
+    </button>
+    <button class="nav-item" data-tab="history">
+        <i class="fas fa-history"></i>
+        <span>Прогресс</span>
+    </button>
+    <button class="nav-item" data-tab="trajectory">
+        <i class="fas fa-route"></i>
+        <span>Траектория</span>
+    </button>
+    <button class="nav-item" data-tab="stats">
+        <i class="fas fa-chart-simple"></i>
+        <span>Статистика</span>
+    </button>
+</div>
+
+<script>
+    // === ТАБЫ ===
+    const tabs = document.querySelectorAll('.tab-btn, .nav-item');
+    const contents = {
+        upcoming: document.getElementById('tab-upcoming'),
+        history: document.getElementById('tab-history'),
+        trajectory: document.getElementById('tab-trajectory'),
+        stats: document.getElementById('tab-stats')
+    };
+
+    function switchTab(tabId) {
+        // Обновляем кнопки
+        document.querySelectorAll('.tab-btn, .nav-item').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabId);
+        });
+        // Обновляем контент
+        Object.keys(contents).forEach(key => {
+            contents[key].classList.toggle('active', key === tabId);
+        });
+    }
+
+    tabs.forEach(btn => {
+        btn.addEventListener('click', function() {
+            switchTab(this.dataset.tab);
+        });
+    });
+
+    // === СВАЙП ===
+    let startX = 0;
+    const swipeArea = document.getElementById('swipeArea');
+    const tabOrder = ['upcoming', 'history', 'trajectory', 'stats'];
+    let currentTab = 'upcoming';
+
+    swipeArea.addEventListener('touchstart', function(e) {
+        startX = e.touches[0].clientX;
+    }, { passive: true });
+
+    swipeArea.addEventListener('touchend', function(e) {
+        const endX = e.changedTouches[0].clientX;
+        const diff = startX - endX;
+        if (Math.abs(diff) < 50) return;
+
+        const currentIndex = tabOrder.indexOf(currentTab);
+        let newIndex;
+        if (diff > 0) {
+            newIndex = Math.min(currentIndex + 1, tabOrder.length - 1);
+        } else {
+            newIndex = Math.max(currentIndex - 1, 0);
+        }
+        if (newIndex !== currentIndex) {
+            currentTab = tabOrder[newIndex];
+            switchTab(currentTab);
+        }
+    }, { passive: true });
+
+    // Синхронизация currentTab при клике
+    document.querySelectorAll('.tab-btn, .nav-item').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentTab = this.dataset.tab;
+        });
+    });
+
+    // === ФИЛЬТР ПО МЕСЯЦАМ ===
+    const monthFilter = document.getElementById('monthFilter');
+    const resetBtn = document.getElementById('resetFilter');
+    const historyList = document.getElementById('historyList');
+    const filterCount = document.getElementById('filterCount');
+
+    function applyFilter() {
+        const selectedMonth = monthFilter.value;
+        const cards = historyList.querySelectorAll('.lesson-card');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const cardMonth = card.dataset.month;
+            if (selectedMonth === 'all' || cardMonth === selectedMonth) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        if (filterCount) {
+            const total = cards.length;
+            if (selectedMonth === 'all') {
+                filterCount.textContent = `${total} занятий`;
+            } else {
+                filterCount.textContent = `${visibleCount} из ${total}`;
+            }
+        }
+
+        const emptyMsg = historyList.querySelector('.empty-message');
+        if (visibleCount === 0 && !emptyMsg) {
+            const msg = document.createElement('div');
+            msg.className = 'empty-message';
+            msg.id = 'filterEmptyMsg';
+            msg.innerHTML = '<i class="fas fa-search"></i> За этот период занятий нет.';
+            historyList.appendChild(msg);
+        } else {
+            const existingMsg = document.getElementById('filterEmptyMsg');
+            if (existingMsg) existingMsg.remove();
+        }
+    }
+
+    monthFilter.addEventListener('change', applyFilter);
+    resetBtn.addEventListener('click', function() {
+        monthFilter.value = 'all';
+        applyFilter();
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        applyFilter();
+    });
+
+    // === СВОРАЧИВАНИЕ РЕКОМЕНДАЦИЙ ===
+    const recToggleBtn = document.getElementById('recToggleBtn');
+    const recList = document.getElementById('recList');
+
+    if (recToggleBtn) {
+        recToggleBtn.addEventListener('click', function() {
+            const isCollapsed = recList.classList.toggle('collapsed');
+            this.textContent = isCollapsed ? 'Показать все' : 'Скрыть';
+        });
+    }
+</script>
+</body>
+</html>

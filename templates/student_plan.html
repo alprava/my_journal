@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учебная траектория</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
+        body { background: #eef2f6; padding: 30px 20px; color: #1e2a3a; }
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 15px; }
+        .header h1 { font-size: 32px; font-weight: 700; background: linear-gradient(135deg, #1b2a4a, #3a5a7a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header h1 i { -webkit-text-fill-color: initial; color: #4f8ea7; margin-right: 12px; }
+
+        .student-name { font-size: 22px; font-weight: 500; color: #1b2a4a; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; }
+        .student-name i { color: #4f8ea7; margin-right: 10px; }
+
+        .back-btn { background: #eef2f6; padding: 8px 20px; border-radius: 40px; text-decoration: none; color: #2d3748; font-weight: 600; }
+        .back-btn:hover { background: #dce2ea; }
+
+        .card { background: white; border-radius: 28px; padding: 28px 32px; margin-bottom: 24px; box-shadow: 0 4px 16px rgba(0,20,40,0.04); }
+
+        .form-row { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+        .form-row select, .form-row input { flex: 1; min-width: 150px; padding: 12px 18px; border-radius: 20px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 15px; }
+        .form-row button { background: #2c3e50; color: white; border: none; padding: 12px 28px; border-radius: 40px; font-weight: 600; cursor: pointer; }
+        .form-row button:hover { background: #1b2a3a; }
+
+        .module-block {
+            border-left: 6px solid #4f8ea7;
+            border-radius: 20px;
+            background: #fafcff;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+        }
+        .module-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+        .module-header h3 { font-size: 20px; font-weight: 600; color: #1b2a4a; }
+        .module-header .module-dates { font-size: 14px; color: #6b7d93; }
+        .module-header .module-actions { display: flex; gap: 8px; }
+        .module-header .module-actions form { display: inline; }
+        .module-header .module-actions button { background: none; border: none; cursor: pointer; font-size: 16px; color: #6b7d93; }
+        .module-header .module-actions .delete-module-btn:hover { color: #e53e3e; }
+
+        .lesson-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 18px;
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            border: 1px solid #eef2f6;
+            flex-wrap: wrap;
+        }
+        .lesson-item .lesson-date { font-weight: 600; color: #1b2a4a; min-width: 100px; }
+        .lesson-item .lesson-topic { flex: 1; color: #2d3748; }
+        .lesson-item .lesson-actions { display: flex; gap: 6px; }
+        .lesson-item .lesson-actions form { display: inline; }
+        .lesson-item .lesson-actions button { background: none; border: none; cursor: pointer; color: #6b7d93; font-size: 14px; }
+        .lesson-item .lesson-actions .delete-lesson-btn:hover { color: #e53e3e; }
+
+        .format-badge { font-size: 12px; padding: 2px 12px; border-radius: 20px; }
+        .format-badge.online { background: #dbeafe; color: #1e40af; }
+        .format-badge.offline { background: #fef3c7; color: #92400e; }
+
+        .lesson-links { font-size: 13px; color: #4f8ea7; margin-left: 10px; display: flex; gap: 12px; flex-wrap: wrap; }
+        .lesson-links a { color: #4f8ea7; text-decoration: none; }
+        .lesson-links a:hover { text-decoration: underline; }
+
+        .empty-message { color: #8a9bb0; text-align: center; padding: 20px 0; font-size: 15px; }
+        .flash-message { background: #d4edda; color: #1a6e4a; padding: 14px 24px; border-radius: 40px; margin-bottom: 24px; font-weight: 500; }
+
+        .section-title { font-size: 16px; font-weight: 600; color: #1b2a4a; margin-bottom: 14px; border-bottom: 2px solid #eef2f6; padding-bottom: 10px; }
+        .section-title i { color: #4f8ea7; margin-right: 10px; }
+
+        .dynamic-fields { margin-top: 12px; padding: 16px 20px; background: #f8fafc; border-radius: 20px; display: none; }
+        .dynamic-fields.visible { display: block; }
+        .dynamic-fields input { width: 100%; margin-bottom: 10px; }
+        .dynamic-fields input:last-child { margin-bottom: 0; }
+        .link-hint { font-size: 13px; color: #6b7d93; margin-top: 4px; }
+
+        .teacher-note {
+            font-size: 13px;
+            color: #6b7d93;
+            margin: 4px 0 4px 60px;
+            padding: 6px 14px;
+            background: #fef9e7;
+            border-radius: 12px;
+            border-left: 3px solid #f5b342;
+        }
+        .teacher-note i { color: #f5b342; margin-right: 6px; }
+
+        .chain { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .chain-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 20px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border-left: 4px solid #4f8ea7;
+            transition: 0.2s;
+            flex-wrap: wrap;
+        }
+        .chain-item:hover { background: #f0f4fa; }
+        .chain-item .order { font-weight: 700; color: #6b7d93; min-width: 30px; }
+        .chain-item .topic { flex: 1; font-weight: 500; }
+        .chain-item .block-name { font-size: 12px; color: #6b7d93; background: #eef2f6; padding: 2px 12px; border-radius: 20px; }
+        .chain-item .format-badge { font-size: 12px; padding: 2px 12px; border-radius: 20px; }
+        .chain-item .format-badge.online { background: #dbeafe; color: #1e40af; }
+        .chain-item .format-badge.offline { background: #fef3c7; color: #92400e; }
+        .chain-item .actions { display: flex; gap: 8px; }
+        .chain-item .actions form { display: inline; }
+        .chain-item .actions button { background: none; border: none; cursor: pointer; font-size: 16px; color: #6b7d93; }
+        .chain-item .actions button:hover { color: #1b2a3a; }
+        .chain-item .actions .delete-btn:hover { color: #e53e3e; }
+
+        .chain-item.completed {
+            border-left-color: #22c55e;
+            background: #f0fdf4;
+        }
+        .chain-item.completed .topic { color: #15803d; }
+        .chain-item.locked {
+            border-left-color: #d1d5db;
+            background: #f9fafb;
+            opacity: 0.7;
+        }
+        .chain-item.locked .topic { color: #6b7280; }
+        .status-icon { font-size: 18px; margin-right: 6px; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1><i class="fas fa-graduation-cap"></i> Учебная траектория</h1>
+        <a href="/teacher" class="back-btn"><i class="fas fa-arrow-left"></i> Назад</a>
+    </div>
+
+    <div class="student-name">
+        <i class="fas fa-user"></i> {{ student.full_name }}
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}<div class="flash-message">{{ messages[0] }}</div>{% endif %}
+    {% endwith %}
+
+    <div class="card">
+        <div class="section-title"><i class="fas fa-layer-group"></i> Создать большой блок</div>
+        <form method="POST" action="/add_module" class="form-row">
+            <input type="hidden" name="student_id" value="{{ student.id }}">
+            <input type="text" name="module_name" placeholder="Название блока (например: Механика)" required>
+            <input type="date" name="start_date">
+            <span style="color:#6b7d93;">—</span>
+            <input type="date" name="end_date">
+            <input type="color" name="module_color" value="#4f8ea7">
+            <button type="submit"><i class="fas fa-plus"></i> Создать блок</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="section-title"><i class="fas fa-calendar-plus"></i> Добавить занятие в блок</div>
+        <form method="POST" action="/add_lesson_to_module">
+            <input type="hidden" name="student_id" value="{{ student.id }}">
+            <div class="form-row">
+                <select name="module_id" required>
+                    <option value="">Выберите блок</option>
+                    {% for m in modules %}
+                        <option value="{{ m.id }}" style="border-left: 3px solid {{ m.color }};">{{ m.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="date" required>
+                <select name="topic_id" required>
+                    <option value="">Выберите тему</option>
+                    {% for t in all_topics %}
+                        <option value="{{ t.id }}">[{{ t.block_name }}] {{ t.name }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="subtopic" placeholder="Подтема">
+            </div>
+
+            <div class="form-row" style="margin-top: 12px;">
+                <select name="format" id="lessonFormat" required>
+                    <option value="Очно">🏫 Очно</option>
+                    <option value="Онлайн">💻 Онлайн</option>
+                </select>
+                <button type="submit"><i class="fas fa-plus"></i> Добавить</button>
+            </div>
+
+            <div style="margin-top: 16px;">
+                <label style="font-weight: 600; color: #3b4c62; font-size: 14px; display: block; margin-bottom: 6px;">
+                    <i class="fas fa-sticky-note" style="color:#4f8ea7;"></i> Заметки для учителя (не видны родителям)
+                </label>
+                <textarea name="teacher_note" placeholder="Например: разобрать задачи на импульс, повторить графики..." style="width:100%; padding: 12px 16px; border-radius: 18px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 15px; resize: vertical; min-height: 60px;"></textarea>
+                <div style="font-size: 12px; color: #6b7d93; margin-top: 4px;">Эти заметки видны только вам в траектории</div>
+            </div>
+
+            <div class="dynamic-fields" id="onlineFields">
+                <input type="url" name="link_call" placeholder="🔗 Ссылка на видеозвонок (Zoom, Яндекс Телемост...)" style="width:100%;">
+                <input type="url" name="link_board" placeholder="📝 Ссылка на доску (Miro, IDroo...)" style="width:100%;">
+                <div class="link-hint">Эти ссылки увидят родители в карточке занятия</div>
+            </div>
+            <div class="dynamic-fields" id="offlineFields">
+                <input type="text" name="address" placeholder="📍 Адрес офиса (г. Москва, ул. Тверская, д. 10, оф. 5)" style="width:100%;">
+                <div class="link-hint">Этот адрес увидят родители в карточке занятия</div>
+            </div>
+        </form>
+    </div>
+
+    {% if modules %}
+        {% for module in modules %}
+            <div class="module-block" style="border-left-color: {{ module.color }};">
+                <div class="module-header">
+                    <div>
+                        <h3>{{ module.name }}</h3>
+                        <span class="module-dates">
+                            {% if module.start_date %}{{ module.start_date }}{% endif %}
+                            {% if module.end_date %} — {{ module.end_date }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="module-actions">
+                        <form method="POST" action="/delete_module" onsubmit="return confirm('Удалить блок со всеми занятиями?');">
+                            <input type="hidden" name="module_id" value="{{ module.id }}">
+                            <input type="hidden" name="student_id" value="{{ student.id }}">
+                            <button type="submit" class="delete-module-btn"><i class="fas fa-trash-alt"></i></button>
+                        </form>
+                    </div>
+                </div>
+
+                {% set module_lessons = [] %}
+                {% for l in lessons %}
+                    {% if l.module_id == module.id %}
+                        {% set module_lessons = module_lessons.append(l) %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if module_lessons %}
+                    {% for l in module_lessons %}
+                        <div class="lesson-item">
+                            <span class="lesson-date">{{ l.date }}</span>
+                            <span class="lesson-topic">
+                                <strong>{{ l.topic_name }}</strong> {% if l.subtopic %}— {{ l.subtopic }}{% endif %}
+                            </span>
+                            <span class="format-badge {% if l.format == 'Онлайн' %}online{% else %}offline{% endif %}">
+                                {% if l.format == 'Онлайн' %}💻 Онлайн{% else %}🏫 Очно{% endif %}
+                            </span>
+                            <span class="lesson-links">
+                                {% if l.link_call %}
+                                    <a href="{{ l.link_call }}" target="_blank"><i class="fas fa-video"></i> Звонок</a>
+                                {% endif %}
+                                {% if l.link_board %}
+                                    <a href="{{ l.link_board }}" target="_blank"><i class="fas fa-chalkboard"></i> Доска</a>
+                                {% endif %}
+                                {% if l.address %}
+                                    <span><i class="fas fa-map-pin"></i> {{ l.address }}</span>
+                                {% endif %}
+                            </span>
+                            <div class="lesson-actions">
+                                <form method="POST" action="/remove_lesson_from_module" onsubmit="return confirm('Удалить занятие?');">
+                                    <input type="hidden" name="lesson_id" value="{{ l.id }}">
+                                    <input type="hidden" name="student_id" value="{{ student.id }}">
+                                    <button type="submit" class="delete-lesson-btn"><i class="fas fa-times"></i></button>
+                                </form>
+                            </div>
+                            {% if l.teacher_note %}
+                                <div style="font-size: 13px; color: #6b7d93; margin-top: 6px; padding: 4px 12px; background: #fef9e7; border-radius: 12px; border-left: 3px solid #f5b342; width: 100%;">
+                                    <i class="fas fa-sticky-note" style="color:#f5b342;"></i> {{ l.teacher_note }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-message">📭 В этом блоке пока нет занятий. Добавьте первое!</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <div class="empty-message">📭 У ученика пока нет созданных блоков. Создайте первый выше!</div>
+        </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="section-title"><i class="fas fa-list-ol"></i> План занятий (цепочка)</div>
+        {% if lessons %}
+            <div class="chain">
+                {% for l in lessons %}
+                    <div class="chain-item">
+                        <span class="order">#{{ loop.index }}</span>
+                        <span class="status-icon">🔒</span>
+                        <span class="topic">{{ l.topic_name }}</span>
+                        <span class="block-name">{{ l.block_name }}</span>
+                        <span class="format-badge {% if l.format == 'Онлайн' %}online{% else %}offline{% endif %}">
+                            {% if l.format == 'Онлайн' %}💻 Онлайн{% else %}🏫 Очно{% endif %}
+                        </span>
+                        <div class="actions">
+                            <form method="POST" action="/remove_lesson_from_module" onsubmit="return confirm('Удалить занятие из цепочки?');">
+                                <input type="hidden" name="lesson_id" value="{{ l.id }}">
+                                <input type="hidden" name="student_id" value="{{ student.id }}">
+                                <button type="submit" class="delete-btn"><i class="fas fa-trash-alt"></i></button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {% if l.link_call or l.link_board or l.address %}
+                        <div style="font-size: 13px; color: #4f8ea7; margin: -6px 0 6px 60px; padding: 4px 12px; background: #f0f7ff; border-radius: 12px;">
+                            {% if l.link_call %}🔗 <a href="{{ l.link_call }}" target="_blank" style="color:#4f8ea7;">Видеозвонок</a>{% endif %}
+                            {% if l.link_board %} | 📝 <a href="{{ l.link_board }}" target="_blank" style="color:#4f8ea7;">Доска</a>{% endif %}
+                            {% if l.address %}📍 {{ l.address }}{% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if l.teacher_note %}
+                        <div class="teacher-note">
+                            <i class="fas fa-sticky-note"></i> {{ l.teacher_note }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-message">📭 План пока пуст. Добавьте занятия в блоки!</div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+    document.getElementById('lessonFormat').addEventListener('change', function() {
+        document.getElementById('onlineFields').classList.toggle('visible', this.value === 'Онлайн');
+        document.getElementById('offlineFields').classList.toggle('visible', this.value === 'Очно');
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const format = document.getElementById('lessonFormat').value;
+        if (format === 'Онлайн') {
+            document.getElementById('onlineFields').classList.add('visible');
+        } else {
+            document.getElementById('offlineFields').classList.add('visible');
+        }
+    });
+</script>
+</body>
+</html>
