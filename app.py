@@ -1,10 +1,9 @@
 import sqlite3
-from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
 from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 
-import os
-app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
+app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 
 def get_db():
@@ -27,7 +26,6 @@ def init_db():
     
     cursor.execute("SELECT * FROM users WHERE username='teacher'")
     if not cursor.fetchone():
-        # ВОТ ТУТ ИЗМЕНЕНИЕ:
         from werkzeug.security import generate_password_hash
         hashed_password = generate_password_hash('123')
         cursor.execute("INSERT INTO users (username, password, role, teacher_id) VALUES ('teacher', ?, 'teacher', 1)", (hashed_password,))
@@ -74,12 +72,7 @@ def login():
         password = request.form['password']
         db = get_db()
         user = db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
-if user and check_password_hash(user['password'], password):
-    # вход разрешён
-else:
-    flash('Неверный логин или пароль')
-        db.close()
-        if user:
+        if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
             session['role'] = user['role']
             session['username'] = user['username']
@@ -89,6 +82,7 @@ else:
                 return redirect(url_for('student_dashboard'))
         else:
             flash('Неверный логин или пароль')
+        db.close()
     return render_template('login.html')
 
 @app.route('/logout')
@@ -108,8 +102,8 @@ def add_student():
     try:
         cursor = db.cursor()
         hashed_password = generate_password_hash(password)
-cursor.execute("INSERT INTO users (username, password, role, teacher_id) VALUES (?, ?, 'student', ?)", 
-               (username, hashed_password, teacher_id))
+        cursor.execute("INSERT INTO users (username, password, role, teacher_id) VALUES (?, ?, 'student', ?)", (username, hashed_password, teacher_id))
+        user_id = cursor.lastrowid
         cursor.execute("INSERT INTO students (user_id, full_name, teacher_id) VALUES (?, ?, ?)", (user_id, full_name, teacher_id))
         db.commit()
         flash('Ученик добавлен!')
