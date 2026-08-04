@@ -547,8 +547,9 @@ def lesson_card(lesson_id):
         return "Занятие не найдено или доступ запрещён", 404
     return render_template('lesson_card.html', lesson=lesson)
 
-if __name__ == '__main__':
-    init_db()
-    app.run(debug=True, port=8080)
+if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
 
 application = app
